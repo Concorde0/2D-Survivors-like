@@ -61,7 +61,6 @@ public partial struct CharacterMoveSystem : ISystem
     [BurstCompile]  
     public void OnUpdate(ref SystemState state)
     {
-        var deltaTime = SystemAPI.Time.DeltaTime;
         foreach (var (velocity, direction, speed) in SystemAPI.Query<RefRW<PhysicsVelocity>, RefRO<CharacterMoveDirection>, RefRO<CharacterMoveSpeed>>())
         {
             var moveStep2d = direction.ValueRO.Value * speed.ValueRO.Value;

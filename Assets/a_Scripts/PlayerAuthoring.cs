@@ -1,14 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
+using NUnit.Framework;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 public struct PlayerTag : IComponentData
 {
     
 }
+
+public struct CameraTarget : IComponentData
+{
+    public UnityObjectRef<Transform> CameraTransform;
+}
+
+public struct InitializedCameraTargetTag : IComponentData{ }
 
 public class PlayerAuthoring : MonoBehaviour
 {
@@ -18,12 +27,50 @@ public class PlayerAuthoring : MonoBehaviour
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             AddComponent<PlayerTag>(entity);
+            AddComponent<InitializedCameraTargetTag>(entity);
+            AddComponent<CameraTarget>(entity);
         }
     }
     
     
 }
 
+[UpdateInGroup(typeof(InitializationSystemGroup))]
+public partial struct CameraInitializationSystem : ISystem
+{
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<InitializedCameraTargetTag>();
+    }
+    
+    public void OnUpdate(ref SystemState state)
+    {
+        if(CameraTargetSingleton.Instance == null) return;
+        var cameraTargetTransform = CameraTargetSingleton.Instance.transform;
+
+
+        var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
+        foreach (var (cameraTarget,entity) in SystemAPI.Query<RefRW<CameraTarget>>().WithAll<InitializedCameraTargetTag,PlayerTag>().WithEntityAccess())
+        {
+            cameraTarget.ValueRW.CameraTransform = cameraTargetTransform;
+            ecb.RemoveComponent<InitializedCameraTargetTag>(entity);
+        }
+        
+        ecb.Playback(state.EntityManager);
+    }
+}
+
+[UpdateAfter(typeof(TransformSystemGroup))]
+public partial struct MoveCameraSystem : ISystem
+{
+    public void OnUpdate(ref SystemState state)
+    {
+        foreach (var (transform,cameraTarget) in SystemAPI.Query<LocalToWorld, CameraTarget>().WithAll<PlayerTag>().WithNone<InitializedCameraTargetTag>())
+        {
+            cameraTarget.CameraTransform.Value.position = transform.Position;
+        }
+    }
+}
 
 public partial class PlayerInputSystem : SystemBase
 {

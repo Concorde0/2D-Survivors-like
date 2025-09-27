@@ -136,7 +136,8 @@ GameObject:
   - component: {fileID: 800972897}
   - component: {fileID: 800972898}
   - component: {fileID: 800972899}
-  m_Layer: 0
+  - component: {fileID: 800972900}
+  m_Layer: 3
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -202,7 +203,7 @@ Transform:
   m_GameObject: {fileID: 800972892}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -1.18, z: 0}
+  m_LocalPosition: {x: -3.68, y: -0.53, z: 0}
   m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -269,6 +270,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
+--- !u!114 &800972900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800972892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3377763e6a370b64b8803b0686bf741c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1781287424
 GameObject:
   m_ObjectHideFlags: 0
@@ -281,7 +294,7 @@ GameObject:
   - component: {fileID: 1781287427}
   - component: {fileID: 1781287426}
   - component: {fileID: 1781287429}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Boulder
   m_TagString: Untagged
   m_Icon: {fileID: 0}

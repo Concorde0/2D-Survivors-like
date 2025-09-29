@@ -4,6 +4,7 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
+using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -22,6 +23,12 @@ public struct CharacterMoveSpeed : IComponentData
     public float Value;
 }
 
+[MaterialProperty("_FacingDirection")]
+public struct FacingDirectionOverride : IComponentData
+{
+    public float2 Value;
+}
+
 
 public class CharacterAuthoring : MonoBehaviour
 {
@@ -37,6 +44,10 @@ public class CharacterAuthoring : MonoBehaviour
             AddComponent(entity, new CharacterMoveSpeed
             {
                 Value = authoring.moveSpeed
+            });
+            AddComponent(entity, new FacingDirectionOverride
+            {
+                Value = 1
             });
         }
     }
@@ -61,10 +72,35 @@ public partial struct CharacterMoveSystem : ISystem
     [BurstCompile]  
     public void OnUpdate(ref SystemState state)
     {
-        foreach (var (velocity, direction, speed) in SystemAPI.Query<RefRW<PhysicsVelocity>, RefRO<CharacterMoveDirection>, RefRO<CharacterMoveSpeed>>())
+        foreach (var (velocity,facingDirection, direction, speed) 
+                 in SystemAPI.Query<
+                     RefRW<PhysicsVelocity>, 
+                     RefRW<FacingDirectionOverride>,
+                     RefRO<CharacterMoveDirection>, 
+                     RefRO<CharacterMoveSpeed>>())
         {
             var moveStep2d = direction.ValueRO.Value * speed.ValueRO.Value;
-            velocity.ValueRW.Linear = new float3(moveStep2d, 0);
+            velocity.ValueRW.Linear = new float3(moveStep2d, 0f);
+
+            if (math.abs(moveStep2d.x) > 0.15f)
+            {
+                facingDirection.ValueRW.Value = math.sign(moveStep2d.x);
+            }
+                
+        }
+    }
+    
+    public partial struct GlobalTimeUpdateSystem : ISystem
+    {
+        private static int _globalTimeShaderPropertyID;
+        public void OnCreate(ref SystemState state)
+        {
+            _globalTimeShaderPropertyID = Shader.PropertyToID("_GlobalTime");
+        }
+        
+        public void OnUpdate(ref SystemState state)
+        {
+            Shader.SetGlobalFloat(_globalTimeShaderPropertyID, (float)SystemAPI.Time.ElapsedTime);
         }
     }
 }

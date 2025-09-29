@@ -103,4 +103,5 @@ public partial struct CharacterMoveSystem : ISystem
             Shader.SetGlobalFloat(_globalTimeShaderPropertyID, (float)SystemAPI.Time.ElapsedTime);
         }
     }
+    
 }

@@ -72,12 +72,12 @@ public partial struct CharacterMoveSystem : ISystem
     [BurstCompile]  
     public void OnUpdate(ref SystemState state)
     {
-        foreach (var (velocity,facingDirection, direction, speed) 
+        foreach (var (velocity,facingDirection, direction, speed,entity) 
                  in SystemAPI.Query<
                      RefRW<PhysicsVelocity>, 
                      RefRW<FacingDirectionOverride>,
                      RefRO<CharacterMoveDirection>, 
-                     RefRO<CharacterMoveSpeed>>())
+                     RefRO<CharacterMoveSpeed>>().WithEntityAccess())
         {
             var moveStep2d = direction.ValueRO.Value * speed.ValueRO.Value;
             velocity.ValueRW.Linear = new float3(moveStep2d, 0f);
@@ -86,7 +86,13 @@ public partial struct CharacterMoveSystem : ISystem
             {
                 facingDirection.ValueRW.Value = math.sign(moveStep2d.x);
             }
-                
+
+            if (SystemAPI.HasComponent<PlayerTag>(entity))
+            {
+                var animationOverride = SystemAPI.GetComponentRW<AnimationIndexOverride>(entity);
+                var animationType = math.lengthsq(moveStep2d) > float.Epsilon ? PlayerAnimationIndex.Movement : PlayerAnimationIndex.Idle;
+                animationOverride.ValueRW.Value = (float)animationType;
+            }
         }
     }
     
@@ -103,5 +109,4 @@ public partial struct CharacterMoveSystem : ISystem
             Shader.SetGlobalFloat(_globalTimeShaderPropertyID, (float)SystemAPI.Time.ElapsedTime);
         }
     }
-    
 }

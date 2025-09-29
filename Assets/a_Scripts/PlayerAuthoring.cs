@@ -56,7 +56,7 @@ public partial struct CameraInitializationSystem : ISystem
             ecb.RemoveComponent<InitializedCameraTargetTag>(entity);
         }
         
-        ecb.Playback(state.EntityManager);
+        ecb.Playback(state.EntityManager); 
     }
 }
 

@@ -23,7 +23,7 @@ namespace TMG.Survivors
 
         private void OnPlayButton()
         {
-            SceneManager.LoadScene(1);
+            SceneManager.LoadScene(0);
         }
 
         private void OnQuitButton()

@@ -105,7 +105,7 @@ namespace TMG.Survivors
         private void OnQuitButton()
         {
             SetEcsEnabled(true);
-            SceneManager.LoadScene(0);
+            SceneManager.LoadScene(1);
         }
     }
 }

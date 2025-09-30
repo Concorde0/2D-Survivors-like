@@ -6,22 +6,25 @@ using UnityEngine;
 
 namespace a_Scripts
 {
-    public struct GemTag : IComponentData{ }
+    public struct GemTag : IComponentData
+    {
+    }
+
     public class GemAuthoring : MonoBehaviour
     {
-        private class GemBaker : Baker<GemAuthoring>
+        public class Baker : Baker<GemAuthoring>
         {
             public override void Bake(GemAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent<GemTag>(entity); 
+                AddComponent<GemTag>(entity);
                 AddComponent<DestroyEntityFlag>(entity);
-                SetComponentEnabled<DestroyEntityFlag>(entity,false);
+                SetComponentEnabled<DestroyEntityFlag>(entity, false);
             }
         }
     }
-    
-   public partial struct CollectGemSystem : ISystem
+
+    public partial struct CollectGemSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
         {
@@ -37,7 +40,7 @@ namespace a_Scripts
                 GemsCollectedLookup = SystemAPI.GetComponentLookup<GemsCollectedCount>(),
                 DestroyEntityLookup = SystemAPI.GetComponentLookup<DestroyEntityFlag>(),
                 UpdateGemUILookup = SystemAPI.GetComponentLookup<UpdateGemUIFlag>(),
-                
+
             };
 
             var simulationSingleton = SystemAPI.GetSingleton<SimulationSingleton>();
@@ -52,7 +55,7 @@ namespace a_Scripts
         public ComponentLookup<GemsCollectedCount> GemsCollectedLookup;
         public ComponentLookup<DestroyEntityFlag> DestroyEntityLookup;
         public ComponentLookup<UpdateGemUIFlag> UpdateGemUILookup;
-        
+
         public void Execute(TriggerEvent triggerEvent)
         {
             Entity gemEntity;
@@ -63,7 +66,8 @@ namespace a_Scripts
                 gemEntity = triggerEvent.EntityA;
                 playerEntity = triggerEvent.EntityB;
             }
-            else if (GemLookup.HasComponent(triggerEvent.EntityB) && GemsCollectedLookup.HasComponent(triggerEvent.EntityA))
+            else if (GemLookup.HasComponent(triggerEvent.EntityB) &&
+                     GemsCollectedLookup.HasComponent(triggerEvent.EntityA))
             {
                 gemEntity = triggerEvent.EntityB;
                 playerEntity = triggerEvent.EntityA;

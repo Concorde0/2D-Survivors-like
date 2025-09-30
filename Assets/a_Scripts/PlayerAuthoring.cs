@@ -10,6 +10,7 @@ using Unity.Physics;
 using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.UI;
 
 public struct PlayerTag : IComponentData
 {
@@ -50,6 +51,11 @@ public struct PlayerCooldownExpirationTimeStamp : IComponentData, IEnableableCom
     public double Value;
 }
 
+public struct PlayerCooldownExpirationTimestamp : IComponentData
+{
+    public double Value;
+}
+
 public struct GemsCollectedCount : IComponentData
 {
     public int Value;
@@ -57,11 +63,23 @@ public struct GemsCollectedCount : IComponentData
 
 public struct UpdateGemUIFlag : IComponentData, IEnableableComponent { }
 
+public struct PlayerWorldUI : ICleanupComponentData
+{
+    public UnityObjectRef<Transform> CanvasTransform;
+    public UnityObjectRef<Slider> HealthBarSlider;
+}
+
+public struct PlayerWorldUIPrefab : IComponentData
+{
+    public UnityObjectRef<GameObject> Value;
+}
+
 public class PlayerAuthoring : MonoBehaviour
 {
     public GameObject attackPrefab;
     public float coolDownTime;
     public float detectionSize;
+    public GameObject worldUIPrefab;
     private class Baker : Baker<PlayerAuthoring>
     {
         public override void Bake(PlayerAuthoring authoring)
@@ -75,13 +93,13 @@ public class PlayerAuthoring : MonoBehaviour
             var enemyLayer = LayerMask.NameToLayer("Enemy");
             var enemyLayerMask = (uint)math.pow(2, enemyLayer);
             
-            var attackCollisionFilter = new CollisionFilter()
+            var attackCollisionFilter = new CollisionFilter
             {
                 BelongsTo = uint.MaxValue,
                 CollidesWith = enemyLayerMask,
             };
             
-            AddComponent(entity,new PlayerAttackData()
+            AddComponent(entity,new PlayerAttackData
             {
                 AttackPrefab = GetEntity(authoring.attackPrefab, TransformUsageFlags.Dynamic),
                 CoolDownTime = authoring.coolDownTime,
@@ -91,6 +109,11 @@ public class PlayerAuthoring : MonoBehaviour
             });
             AddComponent<PlayerCooldownExpirationTimeStamp>(entity);
             AddComponent<GemsCollectedCount>(entity);
+            AddComponent<UpdateGemUIFlag>(entity);
+            AddComponent(entity, new PlayerWorldUIPrefab
+            {
+                Value = authoring.worldUIPrefab
+            });
         }
     }
     
@@ -175,6 +198,7 @@ public partial struct PlayerAttackSystem : ISystem
 
         var ecbSystem = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
+        
         var physicsWorldSingleton = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
         
         foreach (var (expirationTimeStamp, attackData, transform) in SystemAPI.Query<RefRW<PlayerCooldownExpirationTimeStamp>, PlayerAttackData, LocalTransform>())
@@ -235,6 +259,42 @@ public partial struct PlayerAttackSystem : ISystem
                 GameUIController.Instance.UpdateGemsCollectedText(gemCount.Value);
                 shouldUpdateUI.ValueRW = false;
             }
+        }
+    }
+    
+    public partial struct PlayerWorldUISystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
+            foreach (var (uiPrefab, entity) in SystemAPI.Query<PlayerWorldUIPrefab>().WithNone<PlayerWorldUI>().WithEntityAccess())
+            {
+                var newWorldUI = Object.Instantiate(uiPrefab.Value.Value);
+                ecb.AddComponent(entity, new PlayerWorldUI
+                {
+                    CanvasTransform = newWorldUI.transform,
+                    HealthBarSlider = newWorldUI.GetComponentInChildren<Slider>()
+                });
+            }
+
+            foreach (var (transform, worldUI, currentHitPoints, maxHitPoints) in SystemAPI.Query<LocalToWorld, PlayerWorldUI, CharacterCurrentHitPoints, CharacterMaxHitPoints>())
+            {
+                worldUI.CanvasTransform.Value.position = transform.Position;
+                var healthValue = (float)currentHitPoints.Value / maxHitPoints.Value;
+                worldUI.HealthBarSlider.Value.value = healthValue;
+            }
+
+            foreach (var (worldUI, entity) in SystemAPI.Query<PlayerWorldUI>().WithNone<LocalToWorld>().WithEntityAccess())
+            {
+                if (worldUI.CanvasTransform.Value != null)
+                {
+                    Object.Destroy(worldUI.CanvasTransform.Value.gameObject);
+                }
+
+                ecb.RemoveComponent<PlayerWorldUI>(entity);
+            }
+
+            ecb.Playback(state.EntityManager);
         }
     }
 }

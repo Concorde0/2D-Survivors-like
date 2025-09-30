@@ -7,9 +7,10 @@ using Random = Unity.Mathematics.Random;
 
 namespace a_Scripts
 {
-    public struct EnemySpawnerData : IComponentData
+    public struct EnemySpawnData : IComponentData
     {
         public Entity EnemyPrefab;
+        public Entity ReaperPrefab;
         public float SpawnInterval;
         public float SpawnDistance;
     }
@@ -17,12 +18,15 @@ namespace a_Scripts
     public struct EnemySpawnState : IComponentData
     {
         public float SpawnTimer;
+        public float ReaperSpawnTimer;
         public Random Random;
     }
     
     public class EnemySpawnerAuthoring : MonoBehaviour
     {
         public GameObject EnemyPrefab;
+        public GameObject ReaperPrefab;
+        public float ReaperSpawnTime;
         public float SpawnInterval;
         public float SpawnDistance;
         public uint RandomSeed;
@@ -32,15 +36,17 @@ namespace a_Scripts
             public override void Bake(EnemySpawnerAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.None);
-                AddComponent(entity, new EnemySpawnerData()
+                AddComponent(entity, new EnemySpawnData
                 {
                     EnemyPrefab = GetEntity(authoring.EnemyPrefab, TransformUsageFlags.Dynamic),
+                    ReaperPrefab = GetEntity(authoring.ReaperPrefab, TransformUsageFlags.Dynamic),
                     SpawnInterval = authoring.SpawnInterval,
                     SpawnDistance = authoring.SpawnDistance
                 });
-                AddComponent(entity, new EnemySpawnState()
+                AddComponent(entity, new EnemySpawnState
                 {
                     SpawnTimer = 0f,
+                    ReaperSpawnTimer = authoring.ReaperSpawnTime,
                     Random = Random.CreateFromIndex(authoring.RandomSeed)
                 });
             }
@@ -65,13 +71,27 @@ namespace a_Scripts
             var playerEntity = SystemAPI.GetSingletonEntity<PlayerTag>();
             var playerPosition = SystemAPI.GetComponent<LocalTransform>(playerEntity).Position;
             
-            foreach (var (spawnState,spawnerData) in SystemAPI.Query<RefRW<EnemySpawnState>,EnemySpawnerData>())
+            foreach (var (spawnState, spawnData, entity) in SystemAPI.Query<RefRW<EnemySpawnState>, EnemySpawnData>().WithEntityAccess())
             {
-                spawnState.ValueRW.SpawnTimer -= deltaTime;
-                if (spawnState.ValueRO.SpawnTimer > 0f) { continue; }
-                spawnState.ValueRW.SpawnTimer = spawnerData.SpawnInterval;
+                spawnState.ValueRW.ReaperSpawnTimer -= deltaTime;
+                if (spawnState.ValueRO.ReaperSpawnTimer <= 0f)
+                {
+                    var reaper = ecb.Instantiate(spawnData.ReaperPrefab);
+                    var reaperSpawnPoint = playerPosition + new float3(15f, 10f, 0f);
+                    ecb.SetComponent(reaper, LocalTransform.FromPositionRotationScale(reaperSpawnPoint, quaternion.identity, 4f));
+
+                    var enemyQuery = SystemAPI.QueryBuilder().WithAll<EnemyTag>().Build();
+                    var enemies = enemyQuery.ToEntityArray(state.WorldUpdateAllocator);
+                    ecb.DestroyEntity(enemies);
+                    ecb.DestroyEntity(entity);
+                    continue;
+                }
                 
-                var newEnemy = ecb.Instantiate(spawnerData.EnemyPrefab);
+                spawnState.ValueRW.SpawnTimer -= deltaTime;
+                if (spawnState.ValueRO.SpawnTimer > 0f) continue;
+                spawnState.ValueRW.SpawnTimer = spawnData.SpawnInterval;
+
+                var newEnemy = ecb.Instantiate(spawnData.EnemyPrefab);
                 var spawnAngle = spawnState.ValueRW.Random.NextFloat(0f, math.TAU);
                 var spawnPoint = new float3
                 {
@@ -79,10 +99,10 @@ namespace a_Scripts
                     y = math.cos(spawnAngle),
                     z = 0f
                 };
-                spawnPoint *= spawnerData.SpawnDistance;
+                spawnPoint *= spawnData.SpawnDistance;
                 spawnPoint += playerPosition;
-                
-                ecb.SetComponent(newEnemy,LocalTransform.FromPosition(spawnPoint));
+
+                ecb.SetComponent(newEnemy, LocalTransform.FromPosition(spawnPoint));
             }
         }
     }

@@ -152,7 +152,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnemyPrefab: {fileID: 5748696146619165528, guid: 5dd3fa80be3ea71479e3f112aebe51fb, type: 3}
-  SpawnInterval: 0.5
+  ReaperPrefab: {fileID: 5748696146619165528, guid: e14c083739da3c542896962876bd1fe7, type: 3}
+  ReaperSpawnTime: 20
+  SpawnInterval: 2.5
   SpawnDistance: 25
   RandomSeed: 1337
 --- !u!4 &240850077

@@ -21,6 +21,8 @@ public struct EnemyCooldownExpirationTimeStamp : IComponentData, IEnableableComp
     public double Value;
 }
 
+
+
 [RequireComponent(typeof(CharacterAuthoring))]
 public class EnemyAuthoring : MonoBehaviour
 {

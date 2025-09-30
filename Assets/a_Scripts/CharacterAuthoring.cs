@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using a_Scripts;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -78,6 +79,8 @@ public class CharacterAuthoring : MonoBehaviour
                 Value = authoring.hitPoints
             });
             AddBuffer<DamageThisFrame>(entity);
+            AddComponent<DestroyEntityFlag>(entity);
+            SetComponentEnabled<DestroyEntityFlag>(entity,false);
         }
     }
 }
@@ -145,7 +148,7 @@ public partial struct CharacterMoveSystem : ISystem
         
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (hitPoints,damageThisFrame) in SystemAPI.Query<RefRW<CharacterCurrentHitPoints>,DynamicBuffer<DamageThisFrame>>())
+            foreach (var (hitPoints,damageThisFrame,entity) in SystemAPI.Query<RefRW<CharacterCurrentHitPoints>,DynamicBuffer<DamageThisFrame>>().WithPresent<DestroyEntityFlag>().WithEntityAccess())
             {
                 if(damageThisFrame.IsEmpty) continue;
                 foreach (var damage in damageThisFrame)
@@ -153,6 +156,11 @@ public partial struct CharacterMoveSystem : ISystem
                     hitPoints.ValueRW.Value -= damage.Value;
                 }
                 damageThisFrame.Clear();
+
+                if (hitPoints.ValueRO.Value <= 0)
+                {
+                    SystemAPI.SetComponentEnabled<DestroyEntityFlag>(entity,true);
+                }
             }
         }
     }

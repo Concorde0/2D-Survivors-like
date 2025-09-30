@@ -446,6 +446,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3377763e6a370b64b8803b0686bf741c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  attackPrefab: {fileID: 6453658997640624890, guid: 8965005fc2a1b944d9b5f66371ceb5e1, type: 3}
+  coolDownTime: 1
+  detectionSize: 10
 --- !u!1 &1781287424
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
+using TMG.Survivors;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -49,7 +50,12 @@ public struct PlayerCooldownExpirationTimeStamp : IComponentData, IEnableableCom
     public double Value;
 }
 
+public struct GemsCollectedCount : IComponentData
+{
+    public int Value;
+}
 
+public struct UpdateGemUIFlag : IComponentData, IEnableableComponent { }
 
 public class PlayerAuthoring : MonoBehaviour
 {
@@ -84,6 +90,7 @@ public class PlayerAuthoring : MonoBehaviour
                 
             });
             AddComponent<PlayerCooldownExpirationTimeStamp>(entity);
+            AddComponent<GemsCollectedCount>(entity);
         }
     }
     
@@ -216,6 +223,18 @@ public partial struct PlayerAttackSystem : ISystem
             
             expirationTimeStamp.ValueRW.Value = elapsedTime + attackData.CoolDownTime;
             
+        }
+    }
+    
+    public partial struct UpdateGemUISystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            foreach (var (gemCount, shouldUpdateUI) in SystemAPI.Query<GemsCollectedCount, EnabledRefRW<UpdateGemUIFlag>>())
+            {
+                GameUIController.Instance.UpdateGemsCollectedText(gemCount.Value);
+                shouldUpdateUI.ValueRW = false;
+            }
         }
     }
 }

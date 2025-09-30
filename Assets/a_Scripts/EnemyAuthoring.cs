@@ -21,13 +21,17 @@ public struct EnemyCooldownExpirationTimeStamp : IComponentData, IEnableableComp
     public double Value;
 }
 
-
+public struct GemPrefab : IComponentData
+{
+    public Entity Value;
+}
 
 [RequireComponent(typeof(CharacterAuthoring))]
 public class EnemyAuthoring : MonoBehaviour
 {
     public int attackDamage;
     public float coolDownTime;
+    public GameObject GemPrefab;
     private class EnemyBaker : Baker<EnemyAuthoring>
     {
         public override void Bake(EnemyAuthoring authoring)
@@ -41,6 +45,10 @@ public class EnemyAuthoring : MonoBehaviour
             });
             AddComponent<EnemyCooldownExpirationTimeStamp>(entity);
             SetComponentEnabled<EnemyCooldownExpirationTimeStamp>(entity, false);
+            AddComponent(entity, new GemPrefab()
+            {
+                Value = GetEntity(authoring.GemPrefab, TransformUsageFlags.Dynamic)
+            });
         }
     }
 }

@@ -225,7 +225,7 @@ BoxCollider:
     m_Bits: 0
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
-  m_ProvidesContacts: 0
+  m_ProvidesContacts: 1
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 0.48776016, y: 0.91168296, z: 6.123234e-17}
@@ -269,6 +269,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f899c3bd4888094991974280e2ffa31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  attackDamage: 5
+  coolDownTime: 0.5
 --- !u!114 &409624611
 MonoBehaviour:
   m_ObjectHideFlags: 0
